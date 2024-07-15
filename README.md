@@ -9,68 +9,67 @@ This document outlines the implementation of a service within Leadsyndicate.io t
 ### Step 1: Create a Service to Add New Sources and Generate API Keys
 
 **Endpoint to add new sources and generate an API key:**
-
-```javascript
-const express = require('express');
-const crypto = require('crypto');
-const app = express();
-
-const sources = {}; // Here we store sources and their API keys
-
-app.use(express.json());
-
-// Endpoint to add a new source
-app.post('/add-source', (req, res) => {
-  const { url } = req.body;
-  if (!url) {
-    return res.status(400).send('URL is required');
-  }
-
-  const apiKey = crypto.randomBytes(16).toString('hex');
-  sources[url] = apiKey;
-
-  res.status(201).send({ url, apiKey });
-});
-
-// Middleware to verify the API key
-app.use((req, res, next) => {
-  const apiKey = req.headers['x-api-key'];
-  if (!apiKey) {
-    return res.status(403).send('API key is required');
-  }
-
-  const validApiKey = Object.values(sources).includes(apiKey);
-  if (!validApiKey) {
-    return res.status(403).send('Invalid API key');
-  }
-
-  // Save the validated API key in the request for later use
-  req.validApiKey = apiKey;
-  next();
-});
-
-// Endpoint to receive leads
-app.post('/sources/leads', (req, res) => {
-  const { name, email } = req.body;
-  const referer = req.headers.referer;
-
-  // Verify that the API key matches the referer (source)
-  const sourceUrl = Object.keys(sources).find(key => sources[key] === req.validApiKey);
-
-  if (!sourceUrl || (referer && !referer.includes(sourceUrl))) {
-    return res.status(403).send('Invalid API key for the specified referer');
-  }
-
-  console.log('Lead received:', { name, email });
-
-  // Add logic to store the data in the database
-  res.status(200).send('Lead received successfully');
-});
-
-app.listen(3000, () => {
-  console.log('Server listening on port 3000');
-});```
-
+    
+    const express = require('express');
+    const crypto = require('crypto');
+    const app = express();
+    
+    const sources = {}; // Here we store sources and their API keys
+    
+    app.use(express.json());
+    
+    // Endpoint to add a new source
+    app.post('/add-source', (req, res) => {
+      const { url } = req.body;
+      if (!url) {
+        return res.status(400).send('URL is required');
+      }
+    
+      const apiKey = crypto.randomBytes(16).toString('hex');
+      sources[url] = apiKey;
+    
+      res.status(201).send({ url, apiKey });
+    });
+    
+    // Middleware to verify the API key
+    app.use((req, res, next) => {
+      const apiKey = req.headers['x-api-key'];
+      if (!apiKey) {
+        return res.status(403).send('API key is required');
+      }
+    
+      const validApiKey = Object.values(sources).includes(apiKey);
+      if (!validApiKey) {
+        return res.status(403).send('Invalid API key');
+      }
+    
+      // Save the validated API key in the request for later use
+      req.validApiKey = apiKey;
+      next();
+    });
+    
+    // Endpoint to receive leads
+    app.post('/sources/leads', (req, res) => {
+      const { name, email } = req.body;
+      const referer = req.headers.referer;
+    
+      // Verify that the API key matches the referer (source)
+      const sourceUrl = Object.keys(sources).find(key => sources[key] === req.validApiKey);
+    
+      if (!sourceUrl || (referer && !referer.includes(sourceUrl))) {
+        return res.status(403).send('Invalid API key for the specified referer');
+      }
+    
+      console.log('Lead received:', { name, email });
+    
+      // Add logic to store the data in the database
+      res.status(200).send('Lead received successfully');
+    });
+    
+    app.listen(3000, () => {
+      console.log('Server listening on port 3000');
+    });
+    
 ### Step 2: Modify the Script on the Third-Party Page
 **Script on the third-party page to include the API key::**
     <form id="leadForm">
